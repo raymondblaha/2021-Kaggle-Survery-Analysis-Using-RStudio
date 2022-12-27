@@ -1,0 +1,380 @@
+---
+title: "Stats_Project_Take_4"
+author: "Raymond Blaha"
+date: "2022-12-15"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+
+# install.packages(reactable)
+
+library(rlang)
+library(tidyverse)
+library(viridisLite)
+library(ggplot2)
+library(dplyr)
+library(reactable)
+library(plotly)
+library(pheatmap)
+library(ggpubr)
+library(reshape2)
+library(forcats)
+library(reactable)
+library(ggridges)
+library(ggbeeswarm)
+
+
+
+# Identifying columns. 
+
+ct.cols <- c("Q1", "Q2", "Q3", "Q4", "Q5", "Q6", "Q8", "Q11",
+            "Q13", "Q15", "Q20", "Q21", "Q22", "Q23", "Q25", 
+            "Q26", "Q28")
+
+# Reading csv. 
+kaggle.full <- read.csv("/Users/raymondblahajr/Documents/StatsProject/kaggle_survey_2021_responses.csv")
+
+
+kaggle.full.s <- data.frame(colnames(kaggle.full))
+rownames(kaggle.full.s) <- kaggle.full[1, ]
+
+kaggle.full <- data.frame(kaggle.full[-1,])
+kaggle.full <- kaggle.full %>% mutate_if(is.character, as.factor)
+
+
+
+#You can command + Shift + C. To remove hashtag to view updated data.
+
+#view(kaggle.full)
+#view(kaggle.full.s)
+
+
+
+
+```
+
+
+```{r}
+
+# This is where I need to make a multiple linear regression model on entire csv. you will need to do this first because.
+
+
+
+# This is where I need to make a multiple linear regression model on entire csv. you will need to do this first because. 
+
+# converting entire row of male_dummy to numeric. Then creating new varible on entire column with male, female, and non-binary.
+
+male_dummy <- as.numeric(kaggle.full$Q2)
+
+table(kaggle.full$Q2)
+table(male_dummy)
+
+str(male_dummy)
+
+Gender <- male_dummy
+
+Gender[Gender == 1] <- 1
+Gender[Gender == 2] <- 3
+Gender[Gender == 3] <- 0
+Gender[Gender == 4] <- 0
+Gender[Gender == 5] <- 2
+
+
+length(Gender)
+
+str(Gender)
+
+table(Gender)
+
+Gender
+
+# converting entire row of income to numeric. Then creating new varible on entire column with male, female, and non-binary.
+
+income_dummy <- as.numeric(kaggle.full$Q25)
+
+Income <- as.numeric(income_dummy)
+
+length(income_dummy)
+
+
+table(Income)
+table(income_dummy)
+
+Income[Income == ""] <- 0
+Income[Income == 1] <- 0
+Income[Income == 2] <- 500
+Income[Income == 3] <- 1500
+Income[Income == 4] <- 12500
+Income[Income == 5] <- 112500
+Income[Income == 6] <- 1000000
+Income[Income == 7] <- 137500
+Income[Income == 8] <- 17500
+Income[Income == 9] <- 175000
+Income[Income == 10] <- 2500
+Income[Income == 11] <- 22500
+Income[Income == 12] <- 225000
+Income[Income == 13] <- 27500
+Income[Income == 14] <- 275000
+Income[Income == 15] <- 3500
+Income[Income == 16] <- 35000
+Income[Income == 17] <- 4500
+Income[Income == 18] <- 45000
+Income[Income == 19] <- 6250
+Income[Income == 20] <- 55000
+Income[Income == 21] <- 750000
+Income[Income == 22] <- 65000
+Income[Income == 23] <- 75000
+Income[Income == 24] <- 8750
+Income[Income == 25] <- 85000
+Income[Income == 26] <- 95000
+
+table(Income)
+
+length(Income)
+
+# 25973
+
+
+table(income_dummy)
+
+Income <- na.omit(Income)
+
+Income
+
+str(Income)
+
+# Now do this for experience levels. 
+
+experience_dummy <- as.numeric(kaggle.full$Q6)
+
+Experience <- as.numeric(experience_dummy)
+
+
+table(experience_dummy)
+table(Experience)
+
+Experience[Experience == 1] <- 0.5
+Experience[Experience == 2] <- 1.5
+Experience[Experience == 3] <- 12.5
+Experience[Experience == 4] <- 2.5
+Experience[Experience == 5] <- 3.5
+Experience[Experience == 6] <- 20
+Experience[Experience == 7] <- 4.5
+
+table(experience_dummy)
+table(Experience)
+
+length(Experience)
+
+# Now do this for Education. 
+Education_dummy <- kaggle.full$Q4
+
+
+Education <- as.vector(kaggle.full$Q4_label)
+Education 
+
+
+head(Education)
+
+Education[Education == "I prefer not to answer"] <- 1
+Education[Education == "No formal education past high school"] <- 2
+Education[Education == "Some college/university study without earning a bachelor’s degree"] <- 3
+Education[Education == "Bachelor’s degree"] <- 4
+Education[Education == "Master’s degree"] <- 5
+Education[Education == "Doctoral degree"] <- 6
+Education[Education == "Professional doctorate"] <- 7
+Education[Education == " "] <- 0
+Education[Education == "NA"] <- 0
+
+Education <- as.numeric(Education_dummy)
+Education
+
+table(kaggle.full$Q24_label)
+table(Education)
+
+# Compare of the lengths to ensure that the DF is equal.
+
+length(Education)
+length(Experience)
+length(Income)
+length(Gender)
+# Looks good. All of the row are 25,973.
+
+head(Education)
+head(Experience)
+head(Income)
+head(Gender)
+
+# now we need to combine all of this into a data.frame. 
+
+df <- data.frame(Gender, Income, Education, Experience)
+
+
+row_sub = apply(df, 1, function(row) all(row !=0))
+df[row_sub,]
+
+df <- df[row_sub,]
+
+view(df)
+
+
+
+
+```
+
+
+```{r}
+
+# Now we can create variables forCompensation and Experince based on Gender. Then run an LM on those variables.
+
+df_Gender <- (df$Gender)
+
+df_Gender[df$Gender == 1] <- 1
+df_Gender[df$Gender == 2] <- 2
+
+Male <- df_Gender[df_Gender == 1]
+Male
+Female <- df_Gender[df_Gender == 2]
+Female
+
+# Now do this for compensation
+
+MaleComp <- df$Income[df_Gender == 1]
+MaleComp
+FemaleComp <- df$Income[df_Gender == 2]
+FemaleComp
+
+# Now do this for education
+
+MaleEducation <- df$Education[df_Gender == 1]
+MaleEducation
+FemaleEducation <- df$Education[df_Gender == 2]
+FemaleEducation
+
+# Now do this for experience
+
+MaleExperience <- df$Experience[df_Gender == 1]
+MaleExperience
+FemaleExperience <- df$Experience[df_Gender == 2]
+FemaleExperience 
+
+# Now compare the lengths to ensure that we could run linear regression model. 
+
+length(Male)
+length(MaleComp)
+length(MaleEducation)
+length(MaleExperience)
+
+# Perfect it equals 12642
+
+# Noe compare the lengths to ensure that we can run a linear regression. 
+
+length(Female)
+length(FemaleComp)
+length(FemaleEducation)
+length(FemaleExperience)
+
+# Perfect it equals  2482
+
+
+
+# MaleComp and MaleExperince LM Here. 
+
+
+plot(MaleComp ~ MaleExperience)
+
+
+MaleCompLM <- lm(MaleComp ~ MaleExperience)
+MaleCompLM
+
+cor(MaleComp, MaleExperience)
+
+abline(MaleCompLM)
+
+# Per one unit increase in years of experience. We would expect to see an average increase of $923 in compensation for males. 
+
+plot(FemaleComp ~ FemaleExperience)
+
+FemaleCompLM <- lm(FemaleComp ~ FemaleExperience)
+FemaleCompLM
+
+cor(FemaleComp, FemaleExperience)
+
+
+abline(FemaleCompLM)
+
+
+# Per one unit increase in years of experience. We would expect to an average increase of $1,426 in compensation for female. One thing to note here is that the intercept suggests that that females automatically has a lower salary than males. Even if female have a slightly higher compensation per unit increase in years of experinece. The increase in negliable comparative to a more starting rate of $69,806.
+
+```
+
+
+```{r}
+# One might argue that males might be more likely to return to higher education. Therefore they will have a higher starting salary due to education levels. We can run an multuple linear regression model to hold education constant. 
+
+plot(MaleComp ~ MaleExperience + MaleEducation)
+
+MaleComp_MLM <- lm(MaleComp ~ MaleExperience + MaleEducation)
+MaleComp_MLM
+
+cor(MaleComp, MaleExperience + MaleEducation)
+
+abline(MaleComp_MLM)
+
+# Coefficients:
+   # (Intercept)  MaleExperience   MaleEducation
+   #       22933             805           10264
+
+# While holding education constaint in the male category. We see that per one unit increase in MaleExperience would result in an average increase of $805. 
+
+# Now do this for Females
+
+plot(FemaleComp ~ FemaleExperience + FemaleEducation)
+
+FemaleComp_MLM <- lm(FemaleComp ~ FemaleExperience + FemaleEducation) 
+FemaleComp_MLM
+
+cor(FemaleComp, FemaleExperience + FemaleEducation)
+
+abline(FemaleComp_MLM)
+
+# Coefficients:
+#      (Intercept)  FemaleExperience   FemaleEducation  
+#            12369              1315              8071  
+
+# Whereas, holding education constant in the female category. We see that per one unit increase in FemaleExperience would result in an average increase of $1,315. 
+
+```
+
+
+
+
+```{r}
+# What if we tried to run a mutliple linear regression on the entire dataset. While holding Education and Experience. 
+
+# Use the data.frame that was created earlier before creating male and female variables. 
+
+
+plot(df)
+
+MLM <- lm(Income ~ Gender + Education + Experience, data = df)
+MLM 
+
+cor(Income, Gender + Education + Experience)
+
+summary(MLM)
+
+abline(MLM)
+
+# Holding Education and Experience constant. We can see that the per unit increase in Gender. (Since they are factors as 1 = Male and 2 = Female). We would expect to see on average a decrease of $18,021 in compensation. 
+
+```
+
